@@ -13,7 +13,7 @@ BirdSync is an offline-first bioacoustic surveillance and real-time audio analyt
 Run this command directly in your Raspberry Pi terminal:
 
 ```bash
-git clone https://github.com/YOUR_GITHUB_USERNAME/birdsync.git
+git clone https://github.com/giridhargshetty-byte/birdsync.git
 cd birdsync
 chmod +x install_offline_pi.sh
 sudo ./install_offline_pi.sh
