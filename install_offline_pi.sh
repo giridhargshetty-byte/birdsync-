@@ -17,6 +17,7 @@ echo "[1/6] Installing offline server, browser, and audio runtime dependencies..
 sudo apt-get update -y
 sudo apt-get install -y \
     nginx \
+    openssl \
     python3 \
     python3-pip \
     python3-venv \
@@ -40,11 +41,24 @@ sudo cp -r "$SCRIPT_DIR"/* "$INSTALL_DIR/"
 sudo chown -R www-data:www-data "$INSTALL_DIR"
 sudo chmod -R 755 "$INSTALL_DIR"
 
-# Nginx Site Config
+# Generate Self-Signed SSL Certificate for secure browser microphone access
+echo "Generating self-signed SSL certificate for HTTPS microphone access..."
+sudo openssl req -x509 -nodes -days 3650 -newkey rsa:2048 \
+    -keyout /etc/ssl/private/birdsync.key \
+    -out /etc/ssl/certs/birdsync.crt \
+    -subj "/C=IN/ST=Karnataka/L=Bengaluru/O=KFD/OU=Bioacoustics/CN=birdsync.local" 2>/dev/null || true
+
+# Nginx Site Config (HTTP & HTTPS)
 cat << 'EOF' | sudo tee /etc/nginx/sites-available/birdsync
 server {
     listen 80 default_server;
     listen [::]:80 default_server;
+    listen 443 ssl default_server;
+    listen [::]:443 ssl default_server;
+
+    ssl_certificate /etc/ssl/certs/birdsync.crt;
+    ssl_certificate_key /etc/ssl/private/birdsync.key;
+
     server_name birdsync.local localhost _;
 
     root /var/www/birdsync;
@@ -70,6 +84,7 @@ EOF
 
 sudo rm -f /etc/nginx/sites-enabled/default
 sudo ln -sf /etc/nginx/sites-available/birdsync /etc/nginx/sites-enabled/birdsync
+sudo nginx -t
 sudo systemctl restart nginx
 sudo systemctl enable nginx
 

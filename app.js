@@ -242,6 +242,9 @@ class BirdSyncApp {
 
   async startMicrophone() {
     try {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        throw new Error("Web Browsers restrict microphone access to HTTPS or http://localhost.\n\nTo allow mic over http://192.168.1.11:\nOpen chrome://flags/#unsafely-treat-insecure-origin-as-secure, add http://192.168.1.11, enable it & relaunch Chrome.");
+      }
       this.stopAudio();
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
       this.micStream = stream;
@@ -259,7 +262,7 @@ class BirdSyncApp {
       this.demoInterval = setInterval(() => this.checkLiveAudioLevel(), 3500);
       this.showToast('Microphone live feed online. Monitoring bioacoustic audio spectrum...');
     } catch (err) {
-      alert('Microphone unavailable: ' + err.message + '\nStarting Field Demo Stream.');
+      alert('Microphone unavailable: ' + err.message + '\n\nStarting Field Demo Stream.');
       this.startDemoMode();
     }
   }
