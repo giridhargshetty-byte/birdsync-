@@ -81,6 +81,24 @@ class BirdSyncApp {
       });
     }
 
+    // Clear Logs Button
+    const clearLogsBtn = document.getElementById('clearLogsBtn');
+    if (clearLogsBtn) {
+      clearLogsBtn.addEventListener('click', async () => {
+        if (confirm('Clear all stored field survey bioacoustic logs?')) {
+          this.detections = [];
+          localStorage.removeItem('birdsync_kfd_detections');
+          try {
+            await fetch('/api/clear_logs', { method: 'POST' });
+          } catch (e) {}
+          this.renderDetectionTable();
+          this.renderRecordingsTable();
+          this.updateStatsAndCharts();
+          this.showToast('All survey logs cleared.');
+        }
+      });
+    }
+
     // Export CSV
     const exportCsvBtn = document.getElementById('exportCsvBtn');
     if (exportCsvBtn) {
@@ -261,55 +279,39 @@ class BirdSyncApp {
     if (statusText) statusText.textContent = active ? 'Live Field Mic Active' : 'Idle';
   }
 
-  checkLiveAudioLevel() {
-    if (!this.analyser || !this.audioCtx) return;
-    const sampleRate = this.audioCtx.sampleRate || 44100;
-    const buffer = new Uint8Array(this.analyser.frequencyBinCount);
-    this.analyser.getByteFrequencyData(buffer);
-
-    const nyquist = sampleRate / 2;
-    const binWidth = nyquist / buffer.length;
-
-    // Strict 2200 Hz High-Pass Cutoff Index (Completely skips human voices & TV dialogue)
-    const minBinIndex = Math.floor(2200 / binWidth);
-    const maxBinIndexCutoff = Math.floor(10000 / binWidth);
-
-    let maxVal = 0;
-    let maxBinIndex = 0;
-    let totalSum = 0;
-    let logSum = 0;
-    let binCount = 0;
-
-    for (let i = minBinIndex; i <= maxBinIndexCutoff && i < buffer.length; i++) {
-      const val = buffer[i];
-      totalSum += val;
-      logSum += Math.log(val + 1);
-      binCount++;
-      if (val > maxVal) {
-        maxVal = val;
-        maxBinIndex = i;
-      }
+  async checkLiveAudioLevel() {
+    // 1. Render Live Spectrogram Canvas from Microphone Stream
+    if (this.analyser) {
+      const buffer = new Uint8Array(this.analyser.frequencyBinCount);
+      this.analyser.getByteFrequencyData(buffer);
     }
 
-    if (binCount === 0 || maxVal < 115) return; // Ignore low amplitude sounds
-
-    const arithMean = totalSum / binCount;
-    const geomMean = Math.exp(logSum / binCount);
-    const spectralFlatness = arithMean > 0 ? (geomMean / arithMean) : 1;
-
-    const peakFreqHz = Math.round(maxBinIndex * binWidth);
-
-    // SCIENTIFIC SURVEY FILTER RULES:
-    // 1. peakFreqHz >= 2200 Hz (Excludes all TV speech, human voice, & room acoustics)
-    // 2. spectralFlatness <= 0.08 (Requires pure tonal avian whistle/chirp - excludes broadband TV noise)
-    // 3. maxVal >= 115 (Requires clear call)
-    if (peakFreqHz >= 2200 && peakFreqHz <= 9800 && spectralFlatness <= 0.08) {
-      const now = Date.now();
-      if (this.lastDetectionTime && (now - this.lastDetectionTime < 4000)) {
-        return;
+    // 2. Poll Python BirdNET AI Backend Endpoint for verified hardware microphone classifications
+    try {
+      const res = await fetch('/api/live_detections');
+      if (res.ok) {
+        const backendDetections = await res.json();
+        if (Array.isArray(backendDetections) && backendDetections.length > 0) {
+          let updated = false;
+          for (const det of backendDetections) {
+            if (!this.detections.some(existing => existing.uuid === det.uuid)) {
+              this.detections.unshift(det);
+              updated = true;
+            }
+          }
+          if (updated) {
+            if (this.detections.length > 100) this.detections = this.detections.slice(0, 100);
+            localStorage.setItem('birdsync_kfd_detections', JSON.stringify(this.detections));
+            this.updateDetectionCallout(this.detections[0]);
+            this.renderDetectionTable();
+            this.renderRecordingsTable();
+            this.updateStatsAndCharts();
+            this.showToast(`🎯 BirdNET AI Detection: ${this.detections[0].name} (${Math.round(this.detections[0].confidence * 100)}% Match)`);
+          }
+        }
       }
-      this.lastDetectionTime = now;
-      this.matchAndLogAcousticSignal(peakFreqHz, maxVal, spectralFlatness);
+    } catch (e) {
+      // Backend polling silent catch if server offline
     }
   }
 

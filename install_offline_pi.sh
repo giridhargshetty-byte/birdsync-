@@ -129,12 +129,30 @@ sudo systemctl unmask hostapd 2>/dev/null || true
 sudo systemctl enable hostapd 2>/dev/null || true
 sudo systemctl enable dnsmasq 2>/dev/null || true
 
-# 4. Create Kiosk Display Autostart Service (for Pi HDMI Monitors)
-echo "[4/6] Setting up HDMI Kiosk Mode Autostart Service..."
+# 4. Create BirdNET AI Backend Systemd Service & Kiosk Display Service
+echo "[4/6] Setting up BirdNET AI Python Backend & HDMI Kiosk Services..."
+
+cat << 'EOF' | sudo tee /etc/systemd/system/birdsync-ai-backend.service
+[Unit]
+Description=BirdSync KFD BirdNET AI Bioacoustic Engine
+After=network.target sound.target
+
+[Service]
+Type=simple
+User=pi
+WorkingDirectory=/var/www/birdsync
+ExecStart=/usr/bin/python3 /var/www/birdsync/birdsync_backend.py
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
 cat << 'EOF' | sudo tee /etc/systemd/system/birdsync-kiosk.service
 [Unit]
 Description=BirdSync Kiosk Display Service
-After=network.target nginx.service graphic.target
+After=network.target nginx.service birdsync-ai-backend.service graphic.target
 
 [Service]
 Environment=DISPLAY=:0
@@ -147,6 +165,9 @@ User=pi
 WantedBy=graphical.target
 EOF
 
+sudo systemctl daemon-reload
+sudo systemctl enable birdsync-ai-backend.service 2>/dev/null || true
+sudo systemctl restart birdsync-ai-backend.service 2>/dev/null || true
 sudo systemctl enable birdsync-kiosk.service 2>/dev/null || true
 
 # 5. Audio Subsystem Permissions & Check
