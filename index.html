@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BirdSync | Karnataka Forest Department Bioacoustic Surveillance Portal</title>
+  <meta name="description" content="Karnataka Forest Department Bioacoustic Wildlife Surveillance Platform for real-time acoustic bird sound monitoring in forest ranges and sanctuaries.">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Sidebar Navigation -->
+    <aside class="sidebar">
+      <div class="brand-header">
+        <img src="assets/kfd-seal.png" alt="Karnataka Forest Department Seal" class="brand-seal-img" onerror="this.onerror=null; this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 100 100\'><circle cx=\'50\' cy=\'50\' r=\'45\' fill=\'%23059669\'/><text x=\'50\' y=\'58\' font-size=\'40\' text-anchor=\'middle\' fill=\'white\'>🌿</text></svg>';" />
+        <div class="brand-text">
+          <h2>ಕರ್ನಾಟಕ ಅರಣ್ಯ ಇಲಾಖೆ</h2>
+          <h3>BirdSync KFD</h3>
+          <p>Bioacoustic AI System</p>
+        </div>
+      </div>
+
+      <ul class="nav-menu">
+        <div class="nav-section-label">Monitoring</div>
+        <li class="nav-item active">
+          <button data-tab="live">
+            <span class="nav-icon">📊</span>
+            <span>Overview & Stream</span>
+          </button>
+        </li>
+        <li class="nav-item">
+          <button data-tab="detections">
+            <span class="nav-icon">📜</span>
+            <span>Bioacoustic Logs</span>
+          </button>
+        </li>
+        <li class="nav-item">
+          <button data-tab="analytics">
+            <span class="nav-icon">📈</span>
+            <span>Dawn Chorus Charts</span>
+          </button>
+        </li>
+
+        <div class="nav-section-label">Audio & Species Database</div>
+        <li class="nav-item">
+          <button data-tab="recordings">
+            <span class="nav-icon">📁</span>
+            <span>Recordings Manager</span>
+          </button>
+        </li>
+        <li class="nav-item">
+          <button data-tab="analyzer">
+            <span class="nav-icon">🎵</span>
+            <span>Audio File Inspector</span>
+          </button>
+        </li>
+        <li class="nav-item">
+          <button data-tab="guide">
+            <span class="nav-icon">🌐</span>
+            <span>Global Species (6,000+)</span>
+          </button>
+        </li>
+
+        <div class="nav-section-label">System & Services</div>
+        <li class="nav-item">
+          <button data-tab="tools">
+            <span class="nav-icon">🛠️</span>
+            <span>Database & Diagnostics</span>
+          </button>
+        </li>
+        <li class="nav-item">
+          <button data-tab="settings">
+            <span class="nav-icon">⚙️</span>
+            <span>System Configuration</span>
+          </button>
+        </li>
+      </ul>
+
+      <!-- Field Site / Range Selector Widget -->
+      <div class="sidebar-status">
+        <select id="sanctuarySelector" class="sanctuary-select">
+          <option value="site_01">Karnataka Forest Range #01</option>
+          <option value="site_02">Karnataka Forest Range #02</option>
+          <option value="site_03">Karnataka Forest Range #03</option>
+          <option value="site_04">Karnataka Forest Range #04</option>
+          <option value="site_05">Karnataka Wetland Range #05</option>
+          <option value="site_custom">Custom Field Station Site</option>
+        </select>
+        <div class="status-row">
+          <div style="display:flex; align-items:center; gap:6px;">
+            <div class="status-dot"></div>
+            <span style="font-weight:600; color:var(--text-main);">KFD Field Station</span>
+          </div>
+          <span id="audioStatusText" style="color:var(--primary-dark); font-weight:600;">Active Stream</span>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content Layout -->
+    <main class="main-content">
+      <!-- Top Official Header -->
+      <header class="top-header">
+        <div class="gov-title">
+          <div class="kannada-sub">ಕರ್ನಾಟಕ ಸರ್ಕಾರ - ಅರಣ್ಯ, ಜೀವಿಶಾಸ್ತ್ರ ಮತ್ತು ಪರಿಸರ ಇಲಾಖೆ</div>
+          <h1 id="currentPageTitle">Overview & Live Spectrogram</h1>
+        </div>
+
+        <div class="header-telemetry-bar">
+          <div class="telemetry-chip">
+            <span class="icon">☀️</span>
+            <div>
+              <div class="val">96%</div>
+              <div class="lbl">Solar Battery</div>
+            </div>
+          </div>
+          <div class="telemetry-chip">
+            <span class="icon">📡</span>
+            <div>
+              <div class="val">-68 dBm</div>
+              <div class="lbl">4G/LoRa Link</div>
+            </div>
+          </div>
+          <div class="telemetry-chip">
+            <span class="icon">💾</span>
+            <div>
+              <div class="val">42%</div>
+              <div class="lbl">128GB SD Card</div>
+            </div>
+          </div>
+          <div class="telemetry-chip">
+            <span class="icon">🎯</span>
+            <div>
+              <div class="val" id="statTotalDetections">0</div>
+              <div class="lbl">Total Identified</div>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <!-- Tab 1: Overview & Live Spectrogram View -->
+      <section id="liveView" class="tab-view active">
+        <div class="spectrogram-grid">
+          <!-- Spectrogram Visualizer Card -->
+          <div class="card">
+            <div class="card-header">
+              <h3><span>🎙️</span> Real-Time Bioacoustic Spectrogram (0–12 kHz)</h3>
+              <div class="btn-group">
+                <select id="paletteSelect" class="form-control" style="padding: 4px 10px; font-size: 12px; width: auto;">
+                  <option value="viridis">Viridis Sage Heatmap</option>
+                  <option value="magma">Magma Emerald</option>
+                  <option value="cyan">Cyber Teal</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="spectrogram-wrapper">
+              <div class="freq-scale">
+                <span>12 kHz</span>
+                <span>8 kHz</span>
+                <span>4 kHz</span>
+                <span>0 kHz</span>
+              </div>
+              <canvas id="spectrogramCanvas"></canvas>
+            </div>
+
+            <div class="spectrogram-controls">
+              <div class="btn-group">
+                <button id="startMicBtn" class="btn btn-primary">
+                  <span>🎤</span> Enable Microphone
+                </button>
+                <button id="startDemoBtn" class="btn btn-gold">
+                  <span>⚡</span> Live Field Audio Demo
+                </button>
+                <button id="stopAudioBtn" class="btn btn-danger" style="display: none;">
+                  <span>⏹️</span> Pause Feed
+                </button>
+              </div>
+              <div style="font-size: 12px; color: var(--text-dim); font-family: var(--font-mono);">
+                Audio Window: 3.0s | FFT: 512 | Field Monitoring
+              </div>
+            </div>
+          </div>
+
+          <!-- Latest Detection Badge Card (Text/Icon based - No Bird Image) -->
+          <div class="card" style="display:flex; flex-direction:column; justify-content:space-between;">
+            <div class="card-header">
+              <h3><span>👑</span> Latest Identification</h3>
+            </div>
+
+            <div id="latestDetectionBox" class="detection-box">
+              <div id="calloutSymbol" class="species-icon-badge">💎</div>
+              <h4 id="calloutSpeciesName">Indian Roller</h4>
+              <div id="calloutKannadaName" class="kannada-name-tag">ನೀಲಕಂಠ (Neelakantha)</div>
+              <p id="calloutSciName" class="sci-name">Coracias benghalensis</p>
+              <span id="calloutConfidence" class="status-badge-pill">State Bird of Karnataka (96% Match)</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Live Feed Table Card -->
+        <div class="card">
+          <div class="card-header">
+            <h3><span>📋</span> Real-Time Bioacoustic Identification Feed</h3>
+            <button class="btn btn-outline" style="padding: 4px 12px; font-size: 12px;" onclick="window.birdSyncApp.switchTab('detections')">
+              View Complete Logs →
+            </button>
+          </div>
+          <div class="table-container">
+            <table class="custom-table">
+              <thead>
+                <tr>
+                  <th>Species / ಕನ್ನಡ ಹೆಸರು</th>
+                  <th>Confidence</th>
+                  <th>Conservation Status</th>
+                  <th>Call Characteristic</th>
+                  <th>Timestamp</th>
+                  <th>Audio Playback</th>
+                </tr>
+              </thead>
+              <tbody id="detectionTableBody">
+                <!-- JavaScript populated -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- Tab 2: Bioacoustic Logs View -->
+      <section id="detectionsView" class="tab-view">
+        <div class="card">
+          <div class="card-header">
+            <h3><span>📜</span> Karnataka Field Bioacoustic Logs</h3>
+            <div class="btn-group">
+              <button id="exportCsvBtn" class="btn btn-outline" style="padding: 6px 12px; font-size: 12px;">
+                📥 Export CSV
+              </button>
+              <button id="clearLogsBtn" class="btn btn-danger" style="padding: 6px 12px; font-size: 12px;">
+                Clear Logs
+              </button>
+            </div>
+          </div>
+          <div class="table-container">
+            <table class="custom-table">
+              <thead>
+                <tr>
+                  <th>Species / ಕನ್ನಡ ಹೆಸರು</th>
+                  <th>Confidence</th>
+                  <th>Conservation Status</th>
+                  <th>Call Characteristic</th>
+                  <th>Timestamp</th>
+                  <th>Audio Sample</th>
+                </tr>
+              </thead>
+              <tbody id="fullDetectionTableBody">
+                <!-- JavaScript populated -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- Tab 3: Dawn Chorus Analytics View -->
+      <section id="analyticsView" class="tab-view">
+        <div class="grid-2" style="margin-bottom: 20px;">
+          <div class="card">
+            <div class="card-header">
+              <h3><span>📊</span> Daily Bioacoustic Detections (24h)</h3>
+            </div>
+            <div style="height: 240px; position: relative;">
+              <canvas id="dailyChartCanvas" style="width:100%; height:100%;"></canvas>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <h3><span>🍩</span> Species Detection Breakdown</h3>
+            </div>
+            <div style="height: 240px; position: relative; display: flex; justify-content: center;">
+              <canvas id="speciesDonutCanvas" style="width:240px; height:240px;"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <h3><span>🌅</span> Dawn Chorus Peak Activity Heatmap (00:00 - 24:00)</h3>
+          </div>
+          <div style="height: 120px; position: relative;">
+            <canvas id="hourlyHeatmapCanvas" style="width:100%; height:100%;"></canvas>
+          </div>
+        </div>
+      </section>
+
+      <!-- Tab 4: Recordings Browser Manager (Tiny File Manager) -->
+      <section id="recordingsView" class="tab-view">
+        <div class="card">
+          <div class="card-header">
+            <h3><span>📁</span> Recorded Audio Clips Manager (.wav files)</h3>
+            <div class="btn-group">
+              <button class="btn btn-outline" style="font-size:12px;" onclick="window.birdSyncApp.showToast('Purging audio files older than retention policy...')">
+                🧹 Auto-Purge Old Clips
+              </button>
+            </div>
+          </div>
+          <div class="table-container">
+            <table class="custom-table">
+              <thead>
+                <tr>
+                  <th>Clip File Name</th>
+                  <th>Identified Species</th>
+                  <th>Duration</th>
+                  <th>File Size</th>
+                  <th>Date & Time</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="recordingsTableBody">
+                <!-- JavaScript populated -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- Tab 5: Audio File Inspector View -->
+      <section id="analyzerView" class="tab-view">
+        <div class="card" style="margin-bottom: 20px;">
+          <div class="card-header">
+            <h3><span>🎵</span> Bioacoustic Audio File Inspector</h3>
+          </div>
+          <div id="audioDropZone" class="drop-zone">
+            <div class="drop-icon">📁</div>
+            <h3>Drop field audio recording here or click to browse</h3>
+            <p style="color: var(--text-muted); font-size: 13px; margin-top: 4px;">Supports .wav, .mp3, .ogg, .flac bioacoustic recordings from field stations</p>
+            <input type="file" id="audioFileInput" accept="audio/*" style="display: none;" />
+          </div>
+        </div>
+
+        <div id="analyzerResults" class="card" style="display: none;">
+          <div class="card-header">
+            <h3><span>🔍</span> Bioacoustic Waveform & Species Call Timeline</h3>
+            <span id="analyzedFileName" style="font-size: 12px; color: var(--primary-dark); font-weight:600;">File: Field_Recording.wav</span>
+          </div>
+          <div style="height: 140px; position: relative; margin-bottom: 16px;">
+            <canvas id="analyzerWaveformCanvas" style="width: 100%; height: 100%; border-radius: var(--radius-md);"></canvas>
+          </div>
+          <div style="font-size: 12.5px; color: var(--text-muted);">
+            Highlighted Segments: Green call boxes indicate identified Western Ghats bird vocalization windows.
+          </div>
+        </div>
+      </section>
+
+      <!-- Tab 6: Master Global Bioacoustic Species Database (6,000+ Species) -->
+      <section id="guideView" class="tab-view">
+        <div class="card" style="margin-bottom: 20px;">
+          <div class="card-header">
+            <div>
+              <h3><span>🌐</span> Global Bioacoustic Species Database</h3>
+              <span id="guideCountBadge" style="font-size:12px; color:var(--primary-dark); font-weight:600;">BirdNET V2.4 AI Model (6,000+ Species Supported)</span>
+            </div>
+            <input type="text" id="searchGuide" class="form-control" placeholder="Search 6,000+ global species by name or family..." style="width: 320px;" />
+          </div>
+
+          <!-- Realm Filter Pills -->
+          <div class="category-pill-group" id="realmPillGroup">
+            <button class="cat-pill active" data-realm="all">All Global (6,000+)</button>
+            <button class="cat-pill" data-realm="indomalayan">🇮🇳 Indomalayan & India (1,050+)</button>
+            <button class="cat-pill" data-realm="palearctic">🇪🇺 Palearctic & Europe (950+)</button>
+            <button class="cat-pill" data-realm="nearctic">🇺🇸 Nearctic & N. America (900+)</button>
+            <button class="cat-pill" data-realm="neotropical">🇧🇷 Neotropical & S. America (1,800+)</button>
+            <button class="cat-pill" data-realm="afrotropical">🌍 Afrotropical & Africa (1,100+)</button>
+            <button class="cat-pill" data-realm="australasia">🇦🇺 Australasia & Oceania (800+)</button>
+          </div>
+        </div>
+
+        <!-- Species Pagination Header -->
+        <div class="pagination-bar">
+          <div id="pageInfoText" style="font-size: 13px; color: var(--text-muted); font-weight: 500;">
+            Showing 1 - 24 of 6,000+ Global Species
+          </div>
+          <div class="btn-group">
+            <button id="prevPageBtn" class="btn btn-outline" style="padding: 4px 12px; font-size: 12px;" disabled>
+              ◄ Previous
+            </button>
+            <span id="pageIndicator" style="font-size: 12px; font-weight: 600; color: var(--primary-dark); padding: 4px 8px;">Page 1</span>
+            <button id="nextPageBtn" class="btn btn-outline" style="padding: 4px 12px; font-size: 12px;">
+              Next ►
+            </button>
+          </div>
+        </div>
+
+        <div id="fieldGuideGrid" class="grid-3" style="margin-top: 16px;">
+          <!-- Populated by app.js & species_data.js -->
+        </div>
+
+        <!-- Bottom Pagination Bar -->
+        <div class="pagination-bar" style="margin-top: 20px;">
+          <div style="font-size: 12px; color: var(--text-dim);">
+            Taxonomy: Clements / IOC World Bird List | Model: BirdNET-Pi V2.4 TFLite
+          </div>
+          <div class="btn-group">
+            <button id="prevPageBtnBottom" class="btn btn-outline" style="padding: 4px 12px; font-size: 12px;" disabled>
+              ◄ Previous
+            </button>
+            <button id="nextPageBtnBottom" class="btn btn-outline" style="padding: 4px 12px; font-size: 12px;">
+              Next ►
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Tab 7: Database & Diagnostics (Adminer + phpSysInfo + GoTTY + BirdWeather) -->
+      <section id="toolsView" class="tab-view">
+        <div class="tools-grid">
+          <!-- SQLite Database Diagnostics (Adminer) -->
+          <div class="card">
+            <div class="card-header">
+              <h3><span>🗄️</span> SQLite3 Database Browser (Adminer)</h3>
+            </div>
+            <div class="diag-stat-row">
+              <span>Database Engine:</span>
+              <strong>SQLite3 (`birds.db`)</strong>
+            </div>
+            <div class="diag-stat-row">
+              <span>Total Recorded Rows:</span>
+              <strong id="dbTotalRows">1,482 Detections</strong>
+            </div>
+            <div class="diag-stat-row">
+              <span>Database Size:</span>
+              <strong>14.2 MB</strong>
+            </div>
+            <div style="margin-top: 14px; display: flex; gap: 8px;">
+              <button class="btn btn-outline" style="font-size:12px;" onclick="window.birdSyncApp.showToast('SQL Query executed: SELECT * FROM detections ORDER BY timestamp DESC LIMIT 50;')">
+                🔍 Run SQL Query
+              </button>
+              <button class="btn btn-outline" style="font-size:12px;" onclick="window.birdSyncApp.showToast('Downloading SQLite database backup (birds.db)...')">
+                💾 Export SQLite DB
+              </button>
+            </div>
+          </div>
+
+          <!-- System Hardware Diagnostics (phpSysInfo) -->
+          <div class="card">
+            <div class="card-header">
+              <h3><span>💻</span> System Diagnostics (phpSysInfo)</h3>
+            </div>
+            <div class="diag-stat-row">
+              <span>CPU Usage:</span>
+              <div style="display:flex; align-items:center; gap:8px;">
+                <span>14%</span>
+                <div class="progress-bar-bg"><div class="progress-bar-fill" style="width:14%;"></div></div>
+              </div>
+            </div>
+            <div class="diag-stat-row">
+              <span>CPU Temperature:</span>
+              <strong style="color:var(--primary-dark);">41.2 °C (Cool)</strong>
+            </div>
+            <div class="diag-stat-row">
+              <span>RAM Memory:</span>
+              <span>1.2 GB / 4.0 GB (30%)</span>
+            </div>
+            <div class="diag-stat-row">
+              <span>SD Storage:</span>
+              <span>53.7 GB Free / 128 GB</span>
+            </div>
+          </div>
+
+          <!-- Web Terminal Console (GoTTY) -->
+          <div class="card" style="grid-column: span 2;">
+            <div class="card-header">
+              <h3><span>🖥️</span> Web Terminal Shell Console (GoTTY x86/ARM64)</h3>
+              <span style="font-size:12px; color:var(--primary-dark); font-weight:600;">Status: Connected (bash 5.1)</span>
+            </div>
+            <div class="terminal-box" id="terminalBox">
+birdnet-kfd@field-station:~$ systemctl status birdnet-analysis.service
+● birdnet-analysis.service - BirdNET Bioacoustic Analysis Daemon
+     Loaded: loaded (/etc/systemd/system/birdnet-analysis.service; enabled)
+     Active: active (running) since Fri 2026-07-31 06:00:00 IST; 11h ago
+   Main PID: 1420 (python3)
+      Tasks: 4 (limit: 4915)
+     Memory: 284.1M
+     CGroup: /system.slice/birdnet-analysis.service
+             └─1420 /usr/bin/python3 /home/birdnet/BirdNET-Pi/scripts/analysis.py
+birdnet-kfd@field-station:~$ █
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Tab 8: Comprehensive Settings View (BirdNET-Pi Settings Suite) -->
+      <section id="settingsView" class="tab-view">
+        <div class="card" style="max-width: 800px;">
+          <div class="card-header">
+            <h3><span>⚙️</span> Karnataka Forest Department Bioacoustic System Settings</h3>
+          </div>
+
+          <!-- Section 1: Audio Hardware Settings -->
+          <div class="settings-section-title">1. Audio Hardware & Microphone Configuration</div>
+          <div class="grid-2">
+            <div class="form-group">
+              <label>Audio Input Device Index</label>
+              <select class="form-control">
+                <option value="0">hw:0,0 (USB Soundcard Microphone)</option>
+                <option value="1">hw:1,0 (Internal I2S Microphone Array)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Sample Rate (Hz)</label>
+              <select class="form-control">
+                <option value="48000">48,000 Hz (Standard Studio)</option>
+                <option value="44100">44,100 Hz</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Section 2: BirdNET Classifier Core Settings -->
+          <div class="settings-section-title">2. BirdNET AI Classifier & Sensitivity</div>
+          <div class="form-group">
+            <label>Minimum Confidence Threshold (<span id="confidenceVal">70%</span>)</label>
+            <input type="range" id="confidenceSlider" class="form-range" min="0.50" max="0.95" step="0.05" value="0.70" />
+            <p style="font-size: 11.5px; color: var(--text-dim); margin-top: 2px;">Detections lower than this confidence score will be excluded from official logs.</p>
+          </div>
+
+          <div class="grid-2">
+            <div class="form-group">
+              <label>Field Station Latitude / Longitude</label>
+              <input type="text" class="form-control" value="12.9716 N, 77.5946 E (Karnataka)" />
+            </div>
+            <div class="form-group">
+              <label>Species Range Filter Radius (km)</label>
+              <input type="number" class="form-control" value="50" />
+            </div>
+          </div>
+
+          <!-- Section 3: Storage & Auto-Purge Policy -->
+          <div class="settings-section-title">3. Disk Storage & Automated File Purge</div>
+          <div class="grid-2">
+            <div class="form-group">
+              <label>Maximum Audio Storage Allocation (GB)</label>
+              <input type="number" class="form-control" value="80" />
+            </div>
+            <div class="form-group">
+              <label>Auto-Purge Clip Age (Days)</label>
+              <input type="number" class="form-control" value="30" />
+            </div>
+          </div>
+
+          <!-- Section 4: Apprise Webhook Alerts -->
+          <div class="settings-section-title">4. Apprise Forest Control Room Webhooks</div>
+          <div class="form-group">
+            <label>Apprise Webhook Service URL</label>
+            <input type="text" class="form-control" placeholder="discord://webhook_id/kfd_control_room" />
+            <p style="font-size: 11.5px; color: var(--text-dim); margin-top: 2px;">Instant alerts sent to Range Forest Officer (RFO) upon detection of Schedule I / Endangered species.</p>
+          </div>
+
+          <!-- Section 5: System Backup & Restore -->
+          <div class="settings-section-title">5. Backup & Restore System</div>
+          <div style="display:flex; gap:10px; margin-bottom:20px;">
+            <button class="btn btn-outline" style="font-size:12.5px;" onclick="window.birdSyncApp.showToast('Downloading system backup archive (birdnet_kfd_backup.tar.gz)...')">
+              📦 Export Configuration & DB Backup (.tar.gz)
+            </button>
+            <button class="btn btn-outline" style="font-size:12.5px;" onclick="window.birdSyncApp.showToast('Select backup file to restore configuration.')">
+              📥 Restore System State
+            </button>
+          </div>
+
+          <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--border-color);">
+            <button class="btn btn-primary" onclick="window.birdSyncApp.showToast('Karnataka Forest Department configuration saved.')">
+              Save Configuration Settings
+            </button>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Notification Toast Container -->
+  <div id="toastContainer" class="toast-container"></div>
+
+  <!-- Scripts -->
+  <script src="species_data.js"></script>
+  <script src="charts.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
