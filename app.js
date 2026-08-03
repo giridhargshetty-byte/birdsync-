@@ -18,9 +18,9 @@ class BirdSyncApp {
     this.pageSize = 24;
 
     this.detections = JSON.parse(localStorage.getItem('birdsync_kfd_detections') || '[]');
-    if (this.detections.length === 0) {
-      this.seedInitialDetections();
-    }
+    // Filter out any mock items
+    this.detections = this.detections.filter(d => d.uuid && d.uuid.startsWith('live_'));
+    localStorage.setItem('birdsync_kfd_detections', JSON.stringify(this.detections));
 
     this.initDOM();
     this.initEventListeners();
@@ -28,38 +28,6 @@ class BirdSyncApp {
     this.renderDetectionTable();
     this.renderRecordingsTable();
     this.updateStatsAndCharts();
-  }
-
-  seedInitialDetections() {
-    const now = Date.now();
-    const mockData = [
-      { id: 'coracias_benghalensis', time: now - 1000 * 60 * 10, conf: 0.96 },
-      { id: 'myophonus_horsfieldii', time: now - 1000 * 60 * 35, conf: 0.94 },
-      { id: 'buceros_bicornis', time: now - 1000 * 60 * 80, conf: 0.92 },
-      { id: 'pavo_cristatus', time: now - 1000 * 60 * 150, conf: 0.98 },
-      { id: 'ocyceros_griseus', time: now - 1000 * 60 * 240, conf: 0.91 },
-      { id: 'eudynamys_scolopaceus', time: now - 1000 * 60 * 360, conf: 0.95 }
-    ];
-
-    this.detections = mockData.map((d, index) => {
-      const species = BIRD_SPECIES_DATA.find(s => s.id === d.id) || BIRD_SPECIES_DATA[0];
-      return {
-        uuid: 'kfd_' + (now - index * 1000),
-        speciesId: species.id,
-        name: species.name,
-        kannadaName: species.kannadaName || species.name,
-        scientificName: species.scientificName,
-        symbol: species.symbol || '🌿',
-        status: species.status || 'Native Species',
-        confidence: d.conf,
-        timestamp: new Date(d.time).toLocaleString([], { hour: '2-digit', minute: '2-digit', month: 'short', day: 'numeric' }),
-        rawTime: d.time,
-        color: species.color || '#059669',
-        callType: species.callType
-      };
-    });
-
-    localStorage.setItem('birdsync_kfd_detections', JSON.stringify(this.detections));
   }
 
   initDOM() {
@@ -252,37 +220,19 @@ class BirdSyncApp {
       this.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
       const source = this.audioCtx.createMediaStreamSource(stream);
       this.analyser = this.audioCtx.createAnalyser();
-      this.analyser.fftSize = 512;
+      this.analyser.fftSize = 1024;
       source.connect(this.analyser);
 
       this.isMonitoring = true;
       this.updateAudioButtons(true);
       this.renderSpectrogramFrame();
 
-      this.demoInterval = setInterval(() => this.checkLiveAudioLevel(), 3500);
-      this.showToast('Microphone live feed online. Monitoring bioacoustic audio spectrum...');
+      this.demoInterval = setInterval(() => this.checkLiveAudioLevel(), 1200);
+      this.showToast('Microphone live feed online. Listening for bioacoustic audio signals...');
     } catch (err) {
-      alert('Microphone unavailable: ' + err.message + '\n\nStarting Field Demo Stream.');
-      this.startDemoMode();
+      alert('Microphone error: ' + err.message);
+      this.stopAudio();
     }
-  }
-
-  startDemoMode() {
-    this.stopAudio();
-    this.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    this.analyser = this.audioCtx.createAnalyser();
-    this.analyser.fftSize = 512;
-
-    this.isMonitoring = true;
-    this.updateAudioButtons(true);
-    this.renderSpectrogramFrame();
-
-    this.demoInterval = setInterval(() => {
-      this.synthesizeDemoChirp();
-      this.triggerRandomDetection();
-    }, 4000);
-
-    this.showToast('Field Audio Demo activated. Simulating bioacoustic live stream.');
   }
 
   stopAudio() {
@@ -306,71 +256,89 @@ class BirdSyncApp {
     const statusText = document.getElementById('audioStatusText');
 
     if (startMicBtn) startMicBtn.style.display = active ? 'none' : 'inline-flex';
-    if (startDemoBtn) startDemoBtn.style.display = active ? 'none' : 'inline-flex';
+    if (startDemoBtn) startDemoBtn.style.display = 'none'; // Hide demo button permanently
     if (stopAudioBtn) stopAudioBtn.style.display = active ? 'inline-flex' : 'none';
-    if (statusText) statusText.textContent = active ? 'Active Stream' : 'Idle';
-  }
-
-  synthesizeDemoChirp() {
-    if (!this.audioCtx) return;
-    const osc = this.audioCtx.createOscillator();
-    const gain = this.audioCtx.createGain();
-    
-    const startFreq = 1800 + Math.random() * 2500;
-    const endFreq = startFreq + (Math.random() > 0.5 ? 1200 : -800);
-    
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(startFreq, this.audioCtx.currentTime);
-    osc.frequency.exponentialRampToValueAtTime(endFreq, this.audioCtx.currentTime + 0.35);
-
-    gain.gain.setValueAtTime(0.001, this.audioCtx.currentTime);
-    gain.gain.linearRampToValueAtTime(0.2, this.audioCtx.currentTime + 0.05);
-    gain.gain.exponentialRampToValueAtTime(0.001, this.audioCtx.currentTime + 0.35);
-
-    osc.connect(gain);
-    gain.connect(this.audioCtx.destination);
-    
-    osc.start();
-    osc.stop(this.audioCtx.currentTime + 0.35);
+    if (statusText) statusText.textContent = active ? 'Live Mic Stream Active' : 'Idle';
   }
 
   checkLiveAudioLevel() {
-    if (!this.analyser) return;
+    if (!this.analyser || !this.audioCtx) return;
+    const sampleRate = this.audioCtx.sampleRate || 44100;
     const buffer = new Uint8Array(this.analyser.frequencyBinCount);
     this.analyser.getByteFrequencyData(buffer);
-    
-    // Check average volume level
-    const avg = buffer.reduce((a, b) => a + b, 0) / buffer.length;
 
-    // Check peak energy in bioacoustic frequency range (1kHz to 8kHz bins)
-    const bioacousticBins = buffer.slice(20, 180);
-    const maxBioacousticPeak = Math.max(...bioacousticBins);
+    const avgVolume = buffer.reduce((a, b) => a + b, 0) / buffer.length;
 
-    // Trigger identification if mic detects audio activity or frequency peaks
-    if (avg > 5 || maxBioacousticPeak > 20) {
-      this.triggerRandomDetection();
+    // Find peak frequency bin in the audio spectrum
+    let maxVal = 0;
+    let maxBinIndex = 0;
+    for (let i = 4; i < buffer.length; i++) { // Skip sub-100Hz room rumble
+      if (buffer[i] > maxVal) {
+        maxVal = buffer[i];
+        maxBinIndex = i;
+      }
+    }
+
+    const nyquist = sampleRate / 2;
+    const binWidth = nyquist / buffer.length;
+    const peakFreqHz = Math.round(maxBinIndex * binWidth);
+    const peakProminence = maxVal - avgVolume;
+
+    // Strict Noise Gate: Require real audio energy (whistle, voice, chirp) above ambient room noise
+    if (maxVal > 75 && peakProminence > 30 && peakFreqHz >= 400 && peakFreqHz <= 11000) {
+      // Debounce detections by 3 seconds so the same call isn't spammed
+      const now = Date.now();
+      if (this.lastDetectionTime && (now - this.lastDetectionTime < 3000)) {
+        return;
+      }
+      this.lastDetectionTime = now;
+      this.matchAndLogAcousticSignal(peakFreqHz, maxVal);
     }
   }
 
-  triggerRandomDetection() {
-    const randomSpecies = BIRD_SPECIES_DATA[Math.floor(Math.random() * BIRD_SPECIES_DATA.length)];
-    const confidence = parseFloat((0.82 + Math.random() * 0.16).toFixed(2));
+  matchAndLogAcousticSignal(freqHz, amplitude) {
+    // Parse species frequency range strings like "1.8 kHz - 5.5 kHz"
+    const parseFreq = (str) => {
+      if (!str) return { min: 1000, max: 5000 };
+      const matches = str.match(/([\d\.]+)\s*kHz\s*-\s*([\d\.]+)\s*kHz/i);
+      if (matches) {
+        return { min: parseFloat(matches[1]) * 1000, max: parseFloat(matches[2]) * 1000 };
+      }
+      return { min: 1000, max: 5000 };
+    };
 
-    if (confidence < this.minConfidence) return;
+    // Calculate match score based on measured frequency relative to species acoustic profiles
+    const candidates = CURATED_SPECIES.map(sp => {
+      const range = parseFreq(sp.freqRange);
+      let matchScore = 0;
+      if (freqHz >= range.min && freqHz <= range.max) {
+        const center = (range.min + range.max) / 2;
+        const halfSpan = (range.max - range.min) / 2;
+        const dist = Math.abs(freqHz - center);
+        matchScore = 0.84 + (1 - (dist / (halfSpan || 1))) * 0.14;
+      }
+      return { species: sp, score: parseFloat(matchScore.toFixed(2)) };
+    }).filter(c => c.score >= this.minConfidence).sort((a, b) => b.score - a.score);
+
+    const match = candidates.length > 0 ? candidates[0] : null;
+    if (!match) return; // If no species profile matches frequency, do not log anything
+
+    const sp = match.species;
+    const confidence = match.score;
 
     const newDetection = {
-      uuid: 'kfd_' + Date.now(),
-      speciesId: randomSpecies.id,
-      name: randomSpecies.name,
-      kannadaName: randomSpecies.kannadaName || randomSpecies.name,
-      scientificName: randomSpecies.scientificName,
-      symbol: randomSpecies.symbol || '🌿',
-      status: randomSpecies.status || 'Native Species',
+      uuid: 'live_' + Date.now(),
+      speciesId: sp.id,
+      name: sp.name,
+      kannadaName: sp.kannadaName || sp.name,
+      scientificName: sp.scientificName,
+      symbol: sp.symbol || '🌿',
+      status: sp.status || 'Native Resident',
       confidence: confidence,
       timestamp: new Date().toLocaleString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
       rawTime: Date.now(),
-      color: randomSpecies.color || '#059669',
-      callType: randomSpecies.callType
+      color: sp.color || '#059669',
+      callType: `Live Acoustic Peak: ${(freqHz / 1000).toFixed(1)} kHz`
     };
 
     this.detections.unshift(newDetection);
