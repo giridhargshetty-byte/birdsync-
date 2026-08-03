@@ -272,7 +272,7 @@ class BirdSyncApp {
     // Find peak frequency bin in the audio spectrum
     let maxVal = 0;
     let maxBinIndex = 0;
-    for (let i = 4; i < buffer.length; i++) { // Skip sub-100Hz room rumble
+    for (let i = 15; i < buffer.length; i++) { // Skip sub-600Hz low frequency rumble & speech fundamentals
       if (buffer[i] > maxVal) {
         maxVal = buffer[i];
         maxBinIndex = i;
@@ -283,12 +283,15 @@ class BirdSyncApp {
     const binWidth = nyquist / buffer.length;
     const peakFreqHz = Math.round(maxBinIndex * binWidth);
     const peakProminence = maxVal - avgVolume;
+    const peakEnergyRatio = maxVal / (avgVolume + 1);
 
-    // Strict Noise Gate: Require real audio energy (whistle, voice, chirp) above ambient room noise
-    if (maxVal > 75 && peakProminence > 30 && peakFreqHz >= 400 && peakFreqHz <= 11000) {
-      // Debounce detections by 3 seconds so the same call isn't spammed
+    // BIOACOUSTIC Tonal Whistle Filter:
+    // 1. peakFreqHz >= 1600 Hz: Filters out human voices & TV speech (100Hz - 1400Hz)
+    // 2. peakEnergyRatio >= 5.2: Requires sharp tonal whistle/chirp (TV speech/music is broadband noise)
+    // 3. maxVal >= 105 & peakProminence >= 55: Requires strong, clear audio call
+    if (maxVal >= 105 && peakProminence >= 55 && peakEnergyRatio >= 5.2 && peakFreqHz >= 1600 && peakFreqHz <= 10500) {
       const now = Date.now();
-      if (this.lastDetectionTime && (now - this.lastDetectionTime < 3000)) {
+      if (this.lastDetectionTime && (now - this.lastDetectionTime < 3500)) {
         return;
       }
       this.lastDetectionTime = now;
