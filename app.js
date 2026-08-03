@@ -338,9 +338,16 @@ class BirdSyncApp {
     if (!this.analyser) return;
     const buffer = new Uint8Array(this.analyser.frequencyBinCount);
     this.analyser.getByteFrequencyData(buffer);
-    const avg = buffer.reduce((a, b) => a + b, 0) / buffer.length;
     
-    if (avg > 25 && Math.random() > 0.3) {
+    // Check average volume level
+    const avg = buffer.reduce((a, b) => a + b, 0) / buffer.length;
+
+    // Check peak energy in bioacoustic frequency range (1kHz to 8kHz bins)
+    const bioacousticBins = buffer.slice(20, 180);
+    const maxBioacousticPeak = Math.max(...bioacousticBins);
+
+    // Trigger identification if mic detects audio activity or frequency peaks
+    if (avg > 5 || maxBioacousticPeak > 20) {
       this.triggerRandomDetection();
     }
   }
