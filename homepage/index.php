@@ -43,7 +43,7 @@ if(isset($_GET['stream'])){
   <audio controls autoplay><source src=\"/stream\"></audio>
   </div>
   <h1><a href=\"/\"><img class=\"topimage\" src=\"images/bnp.png\"></a></h1>
-  </div><div class=\"centered\"><h3>$site_name</h3></div>";
+  </div><div class=\"centered\"><h3>$site_name</h3><div class=\"kfd-credit\">ಕರ್ನಾಟಕ ಅರಣ್ಯ ಇಲಾಖೆ &middot; Karnataka Forest Department<br>Designed by Madikeri Research Circle</div></div>";
 } else {
     echo "
   <form action=\"index.php\" method=\"GET\">
@@ -51,7 +51,7 @@ if(isset($_GET['stream'])){
   </form>
   </div>
   <h1><a href=\"/\"><img class=\"topimage\" src=\"images/bnp.png\"></a></h1>
-</div><div class=\"centered\"><h3>$site_name</h3></div>";
+</div><div class=\"centered\"><h3>$site_name</h3><div class=\"kfd-credit\">ಕರ್ನಾಟಕ ಅರಣ್ಯ ಇಲಾಖೆ &middot; Karnataka Forest Department<br>Designed by Madikeri Research Circle</div></div>";
 }
 if(isset($_GET['filename'])) {
   $filename = $_GET['filename'];

@@ -17,6 +17,23 @@
   --kfd-on-dark: #ffffff;
   --kfd-shadow: rgba(11, 61, 44, 0.14);
   --kfd-alert: #c8191a;                /* unchanged - update/alert badge */
+  --kfd-gold: #b8860b;                 /* Aranya-style gold accent */
+}
+
+/* Departmental credit line under the station name */
+.kfd-credit {
+  font-size: 11.5px;
+  line-height: 1.5;
+  letter-spacing: 0.3px;
+  color: var(--kfd-primary);
+  opacity: 0.85;
+  margin-top: -6px;
+  padding-bottom: 6px;
+}
+
+/* Gold underline echoing the Aranya department site */
+.topnav {
+  border-bottom: 3px solid var(--kfd-gold);
 }
 
 @font-face {
