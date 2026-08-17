@@ -1,0 +1,230 @@
+/* Karnataka Forest Department - BirdSync theme for embedded Bootstrap panels
+   (Adminer / phpSysInfo). Only colors/shadows touched, no layout changes. */
+body {
+    font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
+    font-size: 13px;
+    padding-top: 80px;
+    color: #1f2a24;
+    background-color: #ffffff;
+}
+
+body::-webkit-scrollbar {
+	display:none;
+}
+
+wbr {
+    display: inline-block;
+}
+
+.table td.rightCell, .table th.rightCell {
+    text-align: right;
+}
+
+.percent {
+    text-align: center;
+}
+
+.card {
+    border-color: #d7e4dc;
+}
+
+.navbar {
+    background-color: #0b3d2c;
+    border-color: #0b3d2c;
+}
+
+.navbar-brand, .navbar-brand:hover {
+    color: #fff;
+    margin-right: 0;
+}
+
+.treegrid-span {
+    display: table-cell;
+}
+
+.treegrid-spanbold {
+    font-weight: bold;
+    display: table-cell;
+}
+
+.treegrid-indent {
+    width: 16px;
+    height: 16px;
+    display: table-cell;
+}
+
+.treegrid-expander {
+    width: 0px;
+    height: 16px;
+    display: table-cell;
+    cursor: pointer;
+}
+
+.normalicon {
+    width: 16px;
+    height: 16px;
+    position: relative;
+    top: 1px;
+    display: table-cell;
+    font-style: normal;
+    font-weight: normal;
+    line-height: 1;
+
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+.normalicon-right:before {
+    content: "\25ba";
+}
+.normalicon-down:before {
+    content: "\25bc";
+}
+
+table.sortable thead th {
+    cursor: pointer;
+    position: relative;
+    top: 0;
+    left: 0;
+}
+
+table.sortable thead th:hover {
+    background-color: #eef7f1;
+}
+
+.sorttable_nosort {
+    cursor: auto!important;
+}
+
+.table-hover > tbody > tr:hover {
+    color: #1f2a24;
+    background-color: #eef7f1;
+}
+
+.table-hover > tfoot > tr:hover {
+    background-color: #eef7f1;
+}
+
+table.borderless td, table.borderless th, table.noborderattop tr:first-child td, table.noborderattop tr:first-child th {
+    border: none!important;
+}
+
+.table {
+    color: #1f2a24;
+    background-color: #fff!important;
+    margin: 0;
+    border: 0;
+}
+
+.logo {
+    cursor: pointer;
+    width: 32px;
+}
+
+.select {
+    color: #1f2a24;
+}
+
+select {
+    background-color: #fefefe;
+}
+
+.template {
+    cursor: pointer;
+    color: #1f2a24;
+}
+
+.language {
+    cursor: pointer;
+    color: #1f2a24;
+}
+
+.card-header {
+    background-color: #0b3d2c!important;
+    border-color: #0b3d2c!important;
+    color: #fff!important;
+}
+
+.progress {
+    margin-bottom: 0;
+    background-color: #f5f5f5;
+  -webkit-box-shadow: inset 0 1px 2px rgba(0, 0, 0, .1);
+          box-shadow: inset 0 1px 2px rgba(0, 0, 0, .1);
+}
+
+.progress-bar-success {
+    background-color: #2e7d52;
+}
+
+.progress-bar-info {
+    background-color: #1b5e3f;
+}
+
+.progress-bar-warning {
+    background-color: #f0ad4e;
+}
+
+.progress-bar-danger {
+    background-color: #d9534f;
+}
+
+.modal-content {
+    background-color: #fff;
+}
+
+.list-group {
+    display: block;
+}
+
+.list-group-item {
+    background-color: #fff;
+}
+
+.reload {
+    background-image: url("../gfx/reload.gif");
+    float: right;
+    cursor: pointer;
+    width: 16px;
+    height: 16px;
+}
+
+.container {
+    padding:0;
+}
+
+.table thead th {
+    border-top: none;
+}
+
+a, a:visited {
+    color: #0b3d2c;
+}
+
+a:hover {
+    text-decoration: underline;
+    color: #0b3d2c;
+}
+
+.psihref, .psihref:visited {
+    color: #fff;
+}
+
+.psihref:hover {
+    text-decoration: underline;
+    color: #fff;
+}
+
+.col-lg-6, .col-lg-12 {
+    padding-bottom: 20px;
+}
+
+.badge{
+    font-size: 12px;
+    border-radius: 10px;
+    padding: 3px 7px;
+    float: right;
+}
+
+.table-nopadding > tbody > tr > td,
+.table-nopadding > tbody > tr > th {
+  padding: 0;
+}
